@@ -38,7 +38,8 @@ function generateContent() {
   formData.append('image', imageInput.files[0]);
   formData.append('text', textInput); // 텍스트 데이터 추가
 
-  const jcookUrl = 'https://port-0-jcook-9zxht12blq81t0ot.sel4.cloudtype.app/generate'
+  // const jcookUrl = 'https://port-0-jcook-9zxht12blq81t0ot.sel4.cloudtype.app/generate'
+  const jcookUrl = 'https://port-0-js-text-5r422alqf79q4o.sel4.cloudtype.app/p/generate'
   fetch(jcookUrl, {
     method: 'POST',
     body: formData

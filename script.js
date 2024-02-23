@@ -1,61 +1,69 @@
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const { 
-  GoogleGenerativeAI, 
-  HarmCategory, 
-  HarmBlockThreshold 
-} = require("@google/generative-ai");
+document.addEventListener('DOMContentLoaded', init);
 
-const app = express();
-app.use(cors());
-app.use(express.json()); 
-app.use((req, res, next) => {
-  console.log('Request received', req.method, req.path,req);
-  next();
-});
-
-const port = 3000;
-const MODEL_NAME = "gemini-1.0-pro-001";
-const API_KEY = ""; // gemini API 키 입력
-const prompt = '이 주제에 필요한 준비물 아이디어 작성해줘'; // 챗봇 역할 프롬프트 입력
-
-app.post('/generate', async (req, res) => {  
-    try {
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
-
-        const generationConfig = {
-            temperature: 0.9,
-            topK: 32,
-            topP: 1,
-            maxOutputTokens: 4096,
-        };
-        const safetySettings = [
-            {
-                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-                threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-        ];
-       const parts = [
-            { text: req.body.userInput + prompt } 
-        ];
-        const result = await model.generateContent({
-            contents: [{ role: "user", parts }],
-            generationConfig,
-            safetySettings,
-        });
-        
-        const response = result.response;     
-        const text = response.text(); 
-        res.send({ text: text }); 
-
-     } catch (error) {
-        console.error("Error during content generation:", error);
-        res.status(500).send({ message: "An error occurred during content generation." });
+function init() {
+  const inputText = document.getElementById('inputText');
+  const sendMessageButton = document.getElementById('sendMessage');
+  sendMessageButton.addEventListener('click', () => {
+    const userMessage = inputText.value.trim();
+    if (userMessage === '') {
+      return;
     }
-});
+    // 팝업 창 표시
+    Swal.fire({
+      title: "🤔분석중..",
+      html: "잠시 기다려 주세요...",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      customClass: {
+        popup: 'custom-popup-class'
+      }
+    });
+    getCode(userMessage)
+  });
+};
 
-app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-});
+async function getCode(questCode) {
+  const Url = ``;//클라우드 타입 서버 주소 입력
+  const Data = JSON.stringify({ userInput: questCode });   
+  let response; 
+    try {
+      response = await fetch(Url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: Data
+      });
+      if (!response.ok) throw new Error('Network response was not ok.'); 
+    } catch (error) { 
+        Swal.fire({
+          title: '에러',
+          text: '분석 중 에러가 발생했습니다!',
+          icon: 'error',
+          confirmButtonText: '닫기'
+        });
+        return;  
+    } 
+
+  try {
+    Swal.close();
+    const data = await response.json();
+    let code = data.text;
+    let content = code.replace(/\*\*/g, '✨');
+    content = content.replace(/\n/g, '<br>');; 
+    Swal.fire({
+      title: '😁분석결과',
+      html: '<div style="text-align: left;">' + content + '</div>',  
+    });
+  } catch (error) {
+    console.error('Error:', error); 
+    Swal.fire({
+      title: '에러',
+      text: '분석 중 에러가 발생했습니다!',
+      icon: 'error',
+      confirmButtonText: '닫기'
+    });
+  }
+}
